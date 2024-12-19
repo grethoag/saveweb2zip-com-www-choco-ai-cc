@@ -1,0 +1,278 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choco AI</title>
+    <link rel="icon" type="image/png" href="images/tab.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="top-links">
+        <a href="https://x.com/chocovirtuals" target="_blank" class="twitter-link">x.com</a>
+        <div class="ca-text" onclick="copyCA()">VIRTUALS  </div>
+    </div>
+    <div class="container">
+        <div class="text-container">
+            <div class="typing-text" style="visibility: visible;">hewwo, i</div>
+        </div>
+        <img src="images/eyes.png" alt="eyes" class="parallax" data-speed="0.03">
+        <img src="images/mouth2.png" alt="mouth" class="parallax mouth-img" data-speed="0.02">
+    </div>
+    <div class="input-container">
+        <img src="images/bao.png" alt="bao" class="input-icon rotating">
+        <input type="text" class="chat-input" placeholder="Chat with Choco!" autocomplete="off">
+    </div>
+
+    <script>
+        // Bao Configuration
+        const BAO_CONFIG = {
+            // Your OpenAI API key
+            apiKey: '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',
+            
+            // Personality traits and settings
+            personality: {
+                name: 'Choco',
+                traits: [
+                    'friendly',
+                    'helpful',
+                    'playful',
+                    'knowledgeable'
+                ],
+                speaking_style: [
+                    'cat language',
+                    'cute',
+                    'warm',
+                    'lowercase'
+                ],
+                interests: [
+                    'cryptocurrency',
+                    'art',
+                    'science',
+                    'helping others'
+                ],
+                greeting: "hewwo, i am Choco."
+            },
+            
+            // Chat settings
+            chatSettings: {
+                model: "gpt-3.5-turbo",
+                max_tokens: 150,
+                temperature: 0.7
+            }
+        };
+
+        let currentSound = null;
+
+        function copyCA() {
+            const caText = "";
+            navigator.clipboard.writeText(caText).then(() => {
+                const caElement = document.querySelector('.ca-text');
+                caElement.classList.add('copied');
+                setTimeout(() => caElement.classList.remove('copied'), 1000);
+            });
+        }
+
+        // Parallax and vignette optimization
+        let mouseX = 0;
+        let mouseY = 0;
+        let rafId = null;
+        const parallaxElements = document.querySelectorAll('.parallax');
+        const vignette = document.querySelector('.vignette');
+        const inputIcon = document.querySelector('.input-icon');
+        const mouthImg = document.querySelector('.mouth-img');
+
+        function updateEffects() {
+            // Update parallax
+            parallaxElements.forEach(element => {
+                const speed = parseFloat(element.getAttribute('data-speed'));
+                const moveX = (mouseX - window.innerWidth / 2) * speed;
+                const moveY = (mouseY - window.innerHeight / 2) * speed;
+                element.style.transform = `translate3d(${moveX}px, calc(5vh + ${moveY}px), 0)`;
+            });
+
+            // Update vignette
+            const vignetteX = (mouseX / window.innerWidth) * 100;
+            const vignetteY = (mouseY / window.innerHeight) * 100;
+            vignette.style.background = `radial-gradient(circle at ${vignetteX}% ${vignetteY}%, transparent 20%, rgba(0,0,0,0.15) 100%)`;
+            
+            rafId = null;
+        }
+
+        function onMouseMove(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            if (!rafId) {
+                rafId = requestAnimationFrame(updateEffects);
+            }
+        }
+
+        // Use passive event listener for better performance
+        document.addEventListener('mousemove', onMouseMove, { passive: true });
+
+        function finishRotation() {
+            return new Promise(resolve => {
+                const currentRotation = getComputedStyle(inputIcon).transform;
+                inputIcon.classList.remove('rotating');
+                inputIcon.classList.add('finish-rotation');
+                
+                // Get the current rotation angle and set it explicitly
+                inputIcon.style.transform = currentRotation;
+                
+                // Force a reflow
+                void inputIcon.offsetWidth;
+                
+                // Transition to 0 degrees
+                inputIcon.style.transform = 'rotate(0deg)';
+                
+                setTimeout(() => {
+                    inputIcon.classList.remove('finish-rotation');
+                    inputIcon.style.transform = '';
+                    resolve();
+                }, 500);
+            });
+        }
+
+        // Sound handling
+        function stopCurrentSound() {
+            if (currentSound) {
+                currentSound.pause();
+                currentSound = null;
+            }
+        }
+
+        function startTalking() {
+            try {
+                stopCurrentSound();
+                currentSound = new Audio('voice.mp3');
+                currentSound.volume = 0.5;
+                
+                // Set a random start time
+                currentSound.addEventListener('loadedmetadata', () => {
+                    currentSound.currentTime = Math.random() * currentSound.duration;
+                    currentSound.play().catch(e => console.error('Sound play failed:', e));
+                });
+
+                mouthImg.src = 'images/mouth2.png';
+            } catch (e) {
+                console.error('Sound creation failed:', e);
+            }
+        }
+
+        function stopTalking() {
+            stopCurrentSound();
+            mouthImg.src = 'images/mouth.png';
+        }
+
+        // Typing effect
+        async function typeText(element, text) {
+            element.textContent = '';
+            element.style.visibility = 'visible';
+            inputIcon.classList.add('rotating');
+            
+            // Start talking at the beginning
+            startTalking();
+            
+            const words = text.split(' ');
+            let currentText = '';
+            
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                
+                // Add space between words except for the first word
+                if (i > 0) {
+                    currentText += ' ';
+                    element.textContent = currentText;
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Pause between words
+                }
+                
+                // Type each character in the word
+                for (let j = 0; j < word.length; j++) {
+                    currentText += word[j];
+                    element.textContent = currentText;
+                    await new Promise(resolve => setTimeout(resolve, 80)); // Character typing speed
+                }
+            }
+
+            // Stop talking at the end
+            stopTalking();
+            await finishRotation();
+        }
+
+        // Generate system message from personality settings
+        function generateSystemMessage() {
+            const { personality } = BAO_CONFIG;
+            return `I am ${personality.name}, an AI assistant with the following traits: ${personality.traits.join(', ')}. 
+                    I communicate in a ${personality.speaking_style.join(', ')} manner and have interests in ${personality.interests.join(', ')}.`;
+        }
+
+        // Handle chat input
+        const chatInput = document.querySelector('.chat-input');
+        const typingText = document.querySelector('.typing-text');
+
+        chatInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter' && chatInput.value.trim()) {
+                const message = chatInput.value.trim();
+                chatInput.value = '';
+                chatInput.disabled = true;
+
+                try {
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${BAO_CONFIG.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: BAO_CONFIG.chatSettings.model,
+                            messages: [
+                                {
+                                    "role": "system",
+                                    "content": generateSystemMessage()
+                                },
+                                {
+                                    "role": "user",
+                                    "content": message
+                                }
+                            ],
+                            max_tokens: BAO_CONFIG.chatSettings.max_tokens,
+                            temperature: BAO_CONFIG.chatSettings.temperature
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to get response');
+                    
+                    const data = await response.json();
+                    await typeText(typingText, data.choices[0].message.content);
+                } catch (error) {
+                    console.error('Error:', error);
+                    await typeText(typingText, "i'm sowwy meow, i couldn't process that request.");
+                }
+
+                chatInput.disabled = false;
+                chatInput.focus();
+            }
+        });
+
+        // Initial greeting
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                typeText(typingText, BAO_CONFIG.personality.greeting);
+            }, 500);
+        });
+
+        // Initialize audio on first user interaction
+        document.addEventListener('click', function initAudio() {
+            const audio = new Audio('voice.mp3');
+            audio.volume = 0;
+            audio.play().then(() => {
+                audio.pause();
+                document.removeEventListener('click', initAudio);
+            }).catch(e => console.error('Audio init failed:', e));
+        }, { once: true });
+    </script>
+
+
+</body></html>
